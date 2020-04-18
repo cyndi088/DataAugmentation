@@ -1,15 +1,11 @@
-import xml.etree.ElementTree as ET
-import pickle
 import os
-from os import getcwd
-import numpy as np
-from PIL import Image
 import shutil
-import matplotlib.pyplot as plt
-
+import numpy as np
 import imgaug as ia
-from imgaug import augmenters as iaa
+import xml.etree.ElementTree as ET
 
+from PIL import Image
+from imgaug import augmenters as iaa
 
 ia.seed(1)
 
@@ -27,15 +23,12 @@ def read_xml_annotation(root, image_id):
         xmax = int(bndbox.find('xmax').text)
         ymin = int(bndbox.find('ymin').text)
         ymax = int(bndbox.find('ymax').text)
-        # print(xmin,ymin,xmax,ymax)
-        bndboxlist.append([xmin, ymin, xmax, ymax])
-        # print(bndboxlist)
 
-    bndbox = root.find('object').find('bndbox')
+        bndboxlist.append([xmin, ymin, xmax, ymax])
+
     return bndboxlist
 
 
-# (506.0000, 330.0000, 528.0000, 348.0000) -> (520.4747, 381.5080, 540.5596, 398.6603)
 def change_xml_annotation(root, image_id, new_target):
     new_xmin = new_target[0]
     new_ymin = new_target[1]
@@ -55,24 +48,19 @@ def change_xml_annotation(root, image_id, new_target):
     xmax.text = str(new_xmax)
     ymax = bndbox.find('ymax')
     ymax.text = str(new_ymax)
-    tree.write(os.path.join(root, str("%06d" % (str(id) + '.xml'))))
+    tree.write(os.path.join(root, str("%06d" % str(id) + '.xml')))
 
 
-def change_xml_list_annotation(root, image_id, new_target, saveroot, id):
+def change_xml_list_annotation(root, image_id, new_target, saveroot, _id):
     in_file = open(os.path.join(root, str(image_id) + '.xml'))  # 这里root分别由两个意思
     tree = ET.parse(in_file)
     elem = tree.find('filename')
-    elem.text = (str("%06d" % int(id)) + '.jpg')
+    elem.text = _id + '.jpg'
     xmlroot = tree.getroot()
     index = 0
 
     for object in xmlroot.findall('object'):  # 找到root节点下的所有country节点
         bndbox = object.find('bndbox')  # 子节点下节点rank的值
-
-        # xmin = int(bndbox.find('xmin').text)
-        # xmax = int(bndbox.find('xmax').text)
-        # ymin = int(bndbox.find('ymin').text)
-        # ymax = int(bndbox.find('ymax').text)
 
         new_xmin = new_target[index][0]
         new_ymin = new_target[index][1]
@@ -90,7 +78,7 @@ def change_xml_list_annotation(root, image_id, new_target, saveroot, id):
 
         index = index + 1
 
-    tree.write(os.path.join(saveroot, str("%06d" % int(id)) + '.xml'))
+    tree.write(os.path.join(saveroot, _id + '.xml'))
 
 
 def mkdir(path):
@@ -99,13 +87,10 @@ def mkdir(path):
     # 去除尾部 \ 符号
     path = path.rstrip("\\")
     # 判断路径是否存在
-    # 存在     True
-    # 不存在   False
     isExists = os.path.exists(path)
     # 判断结果
     if not isExists:
         # 如果不存在则创建目录
-        # 创建目录操作函数
         os.makedirs(path)
         print(path + ' 创建成功')
         return True
@@ -116,23 +101,23 @@ def mkdir(path):
 
 
 if __name__ == "__main__":
-
-    IMG_DIR = "./JPEGImages"
-    XML_DIR = "./Annotations"
-
-    AUG_XML_DIR = "./annotationtest"  # 存储增强后的XML文件夹路径
-    try:
-        shutil.rmtree(AUG_XML_DIR)
-    except FileNotFoundError as e:
-        a = 1
-    mkdir(AUG_XML_DIR)
+    IMG_DIR = "./JPEGImages"  # 需要增强的影像文件夹路径
+    XML_DIR = "./Annotations"  # 需要增强的XML文件夹路径
 
     AUG_IMG_DIR = "./jpegtest"  # 存储增强后的影像文件夹路径
+    AUG_XML_DIR = "./annotationstest"  # 存储增强后的XML文件夹路径
+
     try:
         shutil.rmtree(AUG_IMG_DIR)
     except FileNotFoundError as e:
         a = 1
     mkdir(AUG_IMG_DIR)
+
+    try:
+        shutil.rmtree(AUG_XML_DIR)
+    except FileNotFoundError as e:
+        a = 1
+    mkdir(AUG_XML_DIR)
 
     AUGLOOP = 20  # 每张影像增强的数量
 
@@ -190,13 +175,12 @@ if __name__ == "__main__":
                     new_bndbox_list.append([n_x1, n_y1, n_x2, n_y2])
                 # 存储变化后的图片
                 image_aug = seq_det.augment_images([img])[0]
-                path = os.path.join(AUG_IMG_DIR,
-                                    str("%06d" % (len(files) + int(name[:-4]) + epoch * 250)) + '.jpg')
+                path = os.path.join(AUG_IMG_DIR, name[:-4] + '_' + str(epoch) + '.jpg')
                 image_auged = bbs.draw_on_image(image_aug, thickness=0)
                 Image.fromarray(image_auged).save(path)
 
                 # 存储变化后的XML
                 change_xml_list_annotation(XML_DIR, name[:-4], new_bndbox_list, AUG_XML_DIR,
-                                           len(files) + int(name[:-4]) + epoch * 250)
-                print(str("%06d" % (len(files) + int(name[:-4]) + epoch * 250)) + '.jpg')
+                                           name[:-4] + '_' + str(epoch))
+                print(name[:-4] + '_' + str(epoch) + '.jpg')
                 new_bndbox_list = []
