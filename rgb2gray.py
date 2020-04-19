@@ -1,3 +1,5 @@
+import os
+import shutil
 import cv2
 
 
@@ -15,8 +17,17 @@ def rgb2binary(file1, file2):
     print('%s已转为二值图%s' % (file1, file2))
 
 
-f1 = '1.jpg'
-f2 = '2.jpg'
-f3 = '3.jpg'
-rgb2gray(f1, f2)
-rgb2binary(f1, f3)
+if __name__ == "__main__":
+    IMG_DIR = "./JPEGImages"  # 需要灰度化的图片文件夹路径
+    XML_DIR = "./Annotations"  # 需要灰度化的XML文件夹路径
+
+    # 灰度化
+    for root, sub_folders, files in os.walk(XML_DIR):
+
+        for name in files:
+
+            img_ori = os.path.join(IMG_DIR, name[:-4] + '.jpg')
+            img_gray = os.path.join(IMG_DIR, name[:-4] + '_gray' + '.jpg')
+            rgb2gray(img_ori, img_gray)
+
+            shutil.copy(os.path.join(XML_DIR, name[:-4] + '.xml'), os.path.join(XML_DIR, name[:-4] + '_gray' + '.xml'))

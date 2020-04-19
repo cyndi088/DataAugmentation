@@ -143,8 +143,6 @@ if __name__ == "__main__":
         for name in files:
 
             bndbox = read_xml_annotation(XML_DIR, name)
-            shutil.copy(os.path.join(XML_DIR, name), AUG_XML_DIR)
-            shutil.copy(os.path.join(IMG_DIR, name[:-4] + '.jpg'), AUG_IMG_DIR)
 
             for epoch in range(AUGLOOP):
                 seq_det = seq.to_deterministic()  # 保持坐标和图像同步改变，而不是随机
